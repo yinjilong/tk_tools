@@ -20,6 +20,13 @@ try:
         led_red,
         led_red_on,
         led_grey,
+        stacklight_green,
+        stacklight_green_on,
+        stacklight_red,
+        stacklight_red_on,
+        stacklight_yellow,
+        stacklight_yellow_on,
+        stacklight_grey,
     )
 except ImportError:
     pass
@@ -726,3 +733,94 @@ class Led(tk.Frame):
 
             if self._toggle_on_click:
                 self._canvas.bind("<Button-1>", lambda x: self.to_yellow(True))
+
+
+class StackLight(tk.Frame):
+    """
+    Create a factory stack light
+    # Example usage
+
+    root = tk.Tk()
+    root.title("StackLight Example")
+
+    sl = StackLight(root, colors=("red", "yellow", "green","orange"),width=20,height=60)
+    sl.pack(padx=20, pady=20)
+
+    # Demo cycle
+    def demo():
+        sl.set_state("red", "on")
+        root.after(1000, lambda: sl.set_state("yellow", "blink"))
+        root.after(3000, lambda: sl.set_state("green", "on"))
+        root.after(5000, lambda: sl.set_state("red", "off"))
+        root.after(7000, lambda: sl.set_state("yellow", "off"))
+        root.after(9000, lambda: sl.set_state("green", "off"))
+
+    root.after(1000, demo)
+    root.mainloop()
+
+    """
+    def __init__(self, master, colors=("red", "yellow", "green"), width=20, height=60, **kwargs):
+        super().__init__(master, **kwargs)
+
+        # Load icons (replace these with actual PhotoImage from your byte data)
+        self.icons = {
+            "green_on": tk.PhotoImage(data=stacklight_green_on),
+            "green_off": tk.PhotoImage(data=stacklight_green),
+            "red_on": tk.PhotoImage(data=stacklight_red_on),
+            "red_off": tk.PhotoImage(data=stacklight_red),
+            "yellow_on": tk.PhotoImage(data=stacklight_yellow_on),
+            "yellow_off": tk.PhotoImage(data=stacklight_yellow),
+            "grey": tk.PhotoImage(data=stacklight_grey),
+        }
+
+        self.colors = colors
+        self.lamp_width = width
+        self.lamp_height = int(height / len(self.colors))
+
+        self.lamps = {}  # store each lamp label
+        self.states = {}  # store states: "on", "off", "blink"
+        self.blink_flags = {}
+
+        for c in colors:
+            if f"{c}_off" not in self.icons:
+                lbl = tk.Label(self, image=self.icons["grey"],
+                               compound=tk.CENTER,
+                               text=c,
+                               width=self.lamp_width, height=self.lamp_height, bd=1,
+                               pady=0)
+            else:
+                lbl = tk.Label(self, image=self.icons.get(f"{c}_off", self.icons["grey"]),
+                               width=self.lamp_width, height=self.lamp_height, bd=1,
+                               pady=0)
+                # lbl = tk.Label(self, image=self.icons["grey"])
+            lbl.pack(side=tk.TOP, ipady=0, pady=1)
+            self.lamps[c] = lbl
+            self.states[c] = "off"
+            self.blink_flags[c] = False
+
+    def set_state(self, color, state: str):
+        """
+        Set lamp state: "on", "off", "blink"
+        """
+        if color not in self.colors:
+            return
+
+        self.states[color] = state
+        if state == "on":
+            self._show_icon(color, True)
+        elif state == "off":
+            self._show_icon(color, False)
+        elif state == "blink":
+            self._blink(color)
+
+    def _show_icon(self, color, on: bool):
+        img = self.icons.get(f"{color}_{'on' if on else 'off'}", self.icons["grey"])
+        self.lamps[color].config(image=img)
+        self.lamps[color].image = img  # keep reference
+
+    def _blink(self, color):
+        if self.states[color] != "blink":
+            return  # stop blinking if state changed
+        self.blink_flags[color] = not self.blink_flags[color]
+        self._show_icon(color, self.blink_flags[color])
+        self.after(500, lambda: self._blink(color))  # toggle every 500 ms

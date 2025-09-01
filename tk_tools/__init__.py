@@ -1,6 +1,6 @@
 import importlib.metadata
 
-from tk_tools.canvas import Gauge, Graph, Led, RotaryScale
+from tk_tools.canvas import Gauge, Graph, Led, RotaryScale,StackLight
 
 from tk_tools.groups import (
     ButtonGrid,
